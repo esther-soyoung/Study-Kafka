@@ -86,3 +86,9 @@ vi /usr/local/kafka/config/server.properties
 unclean.leader.election.enable = true  
 ```
 Setting `unclean.leader.election.enable` to `true` corresponds to option 2, `false` corresponds to option 1.
+  
+
+## Reference
+[Apache Kafka Documentation](http://kafka.apache.org/081/documentation.html)  
+Book: 카프카, 데이터 플랫폼의 최강자
+
