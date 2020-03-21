@@ -3,6 +3,8 @@ Before starting the installation, there's one thing left that makes our lives ea
   
 ## Zookeeper
 Is a *centralized coordination service* that aims to ease managing distributed application, by maintaining configuration information and providing distributed synchronization.  
+Zookeeper works as a cluster of servers, each server serving each client(distributed application). Zookeeper server stores status data in `znode`, in *key-value* format. 
+Znode can be easily understood as file or directory. 
   
 ## Installation
 ### Zookeeper Server

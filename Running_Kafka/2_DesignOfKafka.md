@@ -44,4 +44,45 @@ It may:
 Each partition is mapped to the directory of broker, storing two files per a datum: one for the datum itself, the other for its index. Kafka opens up new file handler for every single file in the directories.
   
 2. Recovery gets more difficult.  
-Kafka creates replications for each partition: one working as a leader, the rest working as followers. Each broker contains several topics, and each topic is divided up into several partitions, which means multiple partitions(replications) share a single broker. Among these partitions, some partitions may be leaders. If a broker went down, partitions with its leader at the broken broker also go down for a while
+Kafka creates replications for each partition: original partition becomes a leader, the rest become followers. Each broker contains several topics, and each topic is divided up into several partitions, in the way of multiple partitions(replications) sharing a single broker. If a broker went down, partitions with its leader at the broken broker would need a new leader, and the time consumption for selecting new leader is proportional to the number of partitions. 
+  
+While it is easy to increase the number of partitions, Kafka does not support decreasing the number of partitions. The only way to get this through is to delete the topic and recreate the topic with adjusted number of partitions. 
+  
+It is mentioned above that the concept of partitioning was first originated to fasten up message transmission *without scrambling the order* of messages. Then how do we preserve the order within each partition?  
+The answer here is `offset`.  
+**Offset** is the unique ascending 64-bit integer that refers to the location of each message within the partition. Note that the offset is unique only within each partition, thus it is always necessary to pair up the partion and the offset to retrieve desired data(message). As just stated, offset is created in ascending order, and only accessible in that order.  
+![offset](offset.png)
+
+## Replication in Kafka
+Kafka replicates *partition* to implement stable distributed system. The original partition is called **leader** and replications are called **followers**. 
+  
+### Replication Factor 
+indicates the number of replicas to create. The default value is set to be 1, but configuring replication factor can be done anytime even while it'r running.  
+  
+```sh
+vi /usr/local/kafka/config/server.properties  
+// append below line
+default.replication.factor = {replication_factor}
+```
+  
+It is also available to set different replication factors for different topics, but make sure to have same replication factor for all the brokers in the cluster.
+  
+### Leader and Followers
+Note that only **leader** can perform read and write actions. Followers do not perform any action for now, but constantly fetch data from leader to be ready to replace the leader when current leader goes down. Having followers as backup, Kafka implements stable data transmission regardless of server fault. 
+  
+* In Sync Replica(ISR)
+ISR is a group of replications. Only the followers within same ISR can replace the leader, thereby guaranteeing consistency. Leader periodically checks if followers are up-to-date, and kick out the ones that fell behind.
+  
+However, what if all the brokers went down?  
+There can be two possible options:  
+1. Wait until the last leader revives.  
+    - prioritizes data integrity.
+2. Let any follower that revives first become new leader, even if it is outside of ISR.  
+    - prioritizes fast recovery.
+Option 2 was a default setting before Kafka version 0.11.0.0, but since 0.11.0.0 option 1 is set to be dafault. It is also possible to change the setting by:  
+```sh
+vi /usr/local/kafka/config/server.properties  
+// set as below
+unclean.leader.election.enable = true  
+```
+Setting `unclean.leader.election.enable` to `true` corresponds to option 2, `false` corresponds to option 1.
