@@ -41,7 +41,7 @@ Producer unilaterally sends out messages without waiting for consumer's response
   
 ### Mediocre transmission
 Producer waits for ack response before sending out the next message.  
-![ack](ack.PNG)
+![ack](img/ack.PNG)
   
 ### Slow but secure transmission
 Setting `acks=1` is still susceptible to errors. In order to guarantee **NO** error at all, Kafka provides `acks=all` which checks acks not only from the leader, but also the followers.
