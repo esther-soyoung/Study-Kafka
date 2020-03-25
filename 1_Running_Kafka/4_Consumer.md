@@ -6,6 +6,7 @@ There are two types of consumers:
     Consumers in Kafka versions < 0.9 store offset in Zookeeper Z-node.
 2. New Consumer
     Cosumers in Kafka versions >= 0.9 store offset in Kafka topics.
+  
 Note that this document is written based on new consumer.
   
 ## Major Options
