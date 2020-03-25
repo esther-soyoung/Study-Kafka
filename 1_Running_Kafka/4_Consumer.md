@@ -38,7 +38,8 @@ Note that this document is written based on new consumer.
 12. `auto.commit.interval.ms`  
     Periodically commit intervals.
 13. `fetch.max.wait.ms`  
-    is the waiting upperbound in case of not meeting `fetch.min.bytes`.  
+    is the waiting upperbound in case of not meeting `fetch.min.bytes`.
+  
 Refer to [official documentation](https://kafka.apache.org/documentation/#consumerconfigs) for more options.
   
 ## Retrieving Messages with Console

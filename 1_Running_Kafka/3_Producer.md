@@ -64,7 +64,8 @@ Note that it is recommended to list all the kafka clusters to `bootstrap.servers
 7. `linger.ms`  
     is a waiting time for batch. Producer sends out batch either if batch size is full or linger time is up.
 8. `max.request.size`  
-    is the maximum size of message in bytes allowed to send at once.  
+    is the maximum size of message in bytes allowed to send at once.
+  
 Refer to [official documentation](https://kafka.apache.org/documentation/#producerconfig) for more options.
   
 ## Measures of Transmitting Messages
