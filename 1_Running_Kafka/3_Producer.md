@@ -78,3 +78,6 @@ Producer waits for ack response before sending out the next message.
   
 ### Slow but Secure Transmission
 Setting `acks=1` is still susceptible to errors. In order to guarantee **NO** error at all, Kafka provides `acks=all` which checks acks not only from the leader, but also the followers.
+  
+## Reference
+[Book: 카프카, 데이터 플랫폼의 최강자](https://github.com/onlybooks/kafka/)

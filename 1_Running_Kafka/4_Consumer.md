@@ -74,3 +74,64 @@ consumer = KafkaConsumer('esther-topic', group_id = 'esther-consumer', \
 for msg in consumer:
     print("Topic: %s, Parition: %d, Offset: %d, Key: %s, Value: %s" \
           %(msg.topic, msg.partition, msg.offset, msg.key, msg.value.decode('utf-8')))
+```
+  
+## Order of Messages: Partitions
+Consumers can only retrieve messages based on the offsets within each partition, therefore never know the overall order of the entire messages sent.  
+Message order within the same partition will be abided, but Kafka consumer cannot guarantee the order between partitions. It is also not guaranteed that one paritition is exhausted before consuming the other partition. 
+  
+*kafka-console-consumer* provides `--partition` option to check the order of messages within same partition. 
+```sh
+/usr/local/kafka/bin/kafka-console-consumer.sh \
+--bootstrap-server esther-kafka001:9092,esther-kafka002:9092,esther-kafka003:9092 \
+--topic esther-topic --partition {partition_id} --from-beginning
+```
+  
+The only way to preserve the overall order of the entire messages is to have a **single partition**. However keep in mind that there is a tradeoff between preserving the message order and message processing performance. Having a single partition makes distributed system impossible.
+  
+## Consumer Group
+Kafka manages consumers in a group called consumer group. Consumer group is a group of consumers that retrieve messages from the same topic. By managing meta information(i.e. offsets) of each consumer as a group, it became easier and clearer to expand consumers.  
+Different consumer groups can access the same topic simultaneoulsy, thereby utilizing messages with multiple purposes. This possible due to the independency of offset sets between partitions.
+  
+### Rebalance
+In case of producers producing messages faster than consumers consuming messages, more consumers are needed. As new consumers are introduced, the 'ownership' of each consumer for partitions(target partitions to get messages from) should be rearranged. This is called *rebalancing*.  
+Each partition is assigned to one consumer, and each consumer may be in charge of more than one partitions. Note that consumers are unable to retrieve messages during the rebalance going on.
+  
+*Before Rebalance*
+![before](img/bf_rebalance.jpg)
+  
+*After Rebalance*
+![after](img/af_rebalance.jpg)
+  
+However as each partition is allowed to get only one consumer assigned, there still can be a congestion even after expanding consumer group. This is for the sake of preserving message order within each partition.
+  
+In a nutshell, expanding consumer group is only efficient up to the point where the number of consumers is equal to the number of partitions. For more expedition, the number of partitions should also be expanded as well as consumers.
+  
+Rebalance takes place not only when the consumer group is expanded, but also when consumers in the consumer group are dead. If consumers do not send heartbeat(`poll()`) for certain amount of time(`heartbeat.interval.ms`), consumer group either goes through rebalance rightaway or create new consumers then conduct rebalance. 
+  
+## Commit and Offset
+Kafka consumers keep the information of locations of messages retrieved. This locations are called offsets, and updating offsets is called commit.
+This information is stored in an independent topic called *__consumer_offsets*. Consumers refer to this topic, get the most recently commited offset, and retrieve messages after that offset.  
+If the latest commited offset is
+* smaller than actual offset:
+    duplicate message will be retrieved.
+* bigger than actual offset:
+    messages in between will be ommitted.
+  
+### Auto Commit
+By setting `enable.auto.commit=true`, consumers automatically commit the latest offset based on the duration set by `auto.commit.interval.ms`.
+  
+### Manual Commit
+  
+### Assigning Particular Parition
+Kafka system distributes and assigns partitions to consumers. In case of special needs to assign a particular partition to a particular consumer, extra consumer group is needed only for that particular consumer. Note that it is important to set different consumer group id for such consumer instances.
+  
+### Retrieving Message from Particular Offset
+Kafka consumer API provides manual offset management.
+```java
+consumer.seek(partition0, 2);
+```  
+will seek for the message from offset 2 in partitoin0.
+  
+## Reference
+[Book: 카프카, 데이터 플랫폼의 최강자](https://github.com/onlybooks/kafka/)

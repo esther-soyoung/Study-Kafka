@@ -93,5 +93,5 @@ Setting `unclean.leader.election.enable` to `true` corresponds to option 2, `fal
 
 ## Reference
 [Apache Kafka Documentation](http://kafka.apache.org/081/documentation.html)  
-Book: 카프카, 데이터 플랫폼의 최강자
+[Book: 카프카, 데이터 플랫폼의 최강자](https://github.com/onlybooks/kafka/)
 
