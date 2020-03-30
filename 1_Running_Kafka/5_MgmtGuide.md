@@ -87,3 +87,69 @@ List of consumers can be found by `kafka-consumer-groups` command with `--bootst
 ```
   
 ## Scaling Out Zookeeper
+The more the Zookeeper servers, easier and faster it gets to handle requests and errors. Scaling out Zookeeper can be done anytime, by bringing more servers in, installing Zookeepers on them, then registering **myid** and configuring **zoo.cfg**.
+  
+1. Connect to the new Zookeeper server.  
+2. Set **myid** by: `echo "{id}" > /data/myid`  
+3. Configure **zoo.cfg** by:
+    ```sh
+    tickTime=2000
+    initLimit=10
+    syncLimit=5
+    dataDir=/data
+    clientPort=2181
+    server.1=esther-zk001:2888:3888
+    server.2=esther-zk001:2888:3888
+    server.3=esther-zk001:2888:3888
+    server.4=esther-zk001:2888:3888
+    server.5=esther-zk001:2888:3888
+    ```
+  
+Now the new set Zookeeper servers are good to go. However preexisting servers still need to be updated. Update **zoo.cfg** of these servers, then reboot. Note that it is safe to update the leader at last.  
+  
+First find out which one is the leader. Connect to Zookeeper servers one by one, execute following Zookeeper command:  
+`/usr/local/zookeeper/bin/zkServer.sh status`  
+  
+Append new lines of newly added ones on **zoo.cfg** of preexisting servers, reboot the servers by:  
+`systemctl restart zookeeper-server .service`  
+  
+Check if the Zookeeper ensemble is working fine(well synchronized). Connect to the leader, execute following command:  
+`echo mntr | nc localhost 2181 grep zk_synced_followers`  
+This command returns the number of followers being synchronized.
+  
+## Scaling Out Kafka
+Scaling out Kafka is way simpler than that of Zookeeper. Introduce new server, install Kafka on it, set **broker.id** not to be duplicated, then run Kafka!  
+Check if the new servers are well joined to the existing Kafka cluster. Connect to any Zookeeper server, run the following command:  
+`/usr/local/zookeeper/bin/zkCli.sh`  
+This starts a Zookeeper CLI. Then list out the Kafka cluster.  
+`ls /esther-kafka/brokers/ids`  
+  
+Newly added Kafka servers remains idle at first, since no topic and no partition are assigned. Assume there are five partitions in *esther-topic*. 
+```sh
+/usr/local/kafka/bin/kafka-topics.sh \
+--zookeeper esther-zk001:2181,esther-zk002:2181,esther-zk003:2181/esther-kafka \
+--topic esther-topic --describe
+```
+All the partitions are distributed between preexisting Kafka brokers. Partitions need to be manually reassigned.  
+  
+First create **partition.json** file under `/usr/local/kafka`.
+```json
+{"version":1,
+"partitions":[
+    {"topic":"esther-topic","partition":0,"replicas":[2,1]},
+    {"topic":"esther-topic","partition":1,"replicas":[3,2]},
+    {"topic":"esther-topic","partition":2,"replicas":[4,3]},
+    {"topic":"esther-topic","partition":3,"replicas":[5,4]},
+    {"topic":"esther-topic","partition":4,"replicas":[1,5]}
+]}
+```
+  
+Run following command:  
+```sh
+/usr/local/kafka/bin/kafka-reassign-partitions.sh \
+--zookeeper esther-zk001:2181,esther-zk002:2181,esther-zk003:2181\esther-kafka \
+--reassignment-json-file /usr/local/kafka/partition.json --execute
+```
+  
+## Monitoring Kafka
+
