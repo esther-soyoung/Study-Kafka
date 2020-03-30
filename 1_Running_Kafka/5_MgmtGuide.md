@@ -124,7 +124,7 @@ Check if the new servers are well joined to the existing Kafka cluster. Connect 
 This starts a Zookeeper CLI. Then list out the Kafka cluster.  
 `ls /esther-kafka/brokers/ids`  
   
-Newly added Kafka servers remains idle at first, since no topic and no partition are assigned. Assume there are five partitions in *esther-topic*. 
+Newly added Kafka servers remains idle at first, since no topic and no partition are assigned. Assume there are five partitions in *esther-topic*.  
 ```sh
 /usr/local/kafka/bin/kafka-topics.sh \
 --zookeeper esther-zk001:2181,esther-zk002:2181,esther-zk003:2181/esther-kafka \
@@ -151,5 +151,68 @@ Run following command:
 --reassignment-json-file /usr/local/kafka/partition.json --execute
 ```
   
-## Monitoring Kafka
+## Monitoring Kafka with JMX
+JMX(Java Management Extensions) is a monitoring tool for Java applications. Kafka can be managed with JMX either by adding JMX configuration on `kafka-server-start.sh` or by `systemd`.  
+1. `kafka-server-start.sh`
+```sh
+#!/bin/bash
 
+export JMX_PORT=9999
+if [ $# -lt 1 ];
+then
+    echo "USAGE: $0 [-daemon] server.properties [--override property=value]*"
+    exit 1
+fi
+```
+Then restart Kafka.
+```sh
+systemctl restart kafka-server.service
+```
+Check if JMX is activated.
+```sh
+netstat -ntlp | grep -i 9999
+```
+  
+2. `systemd`
+Create a file named `jmx` under `/usr/local/kafka/config/`.
+```sh
+JMX_PORT=9999
+```
+Add *EnvironmentFile* to `/etc/systemd/system/kafka-server.service`.
+```sh
+Description=kafka-server
+After=network.target
+...
+ExecStop=/usr/local/kafka/bin/kafka-server-stop.sh
+EnvironmentFile=/usr/local/kafka/config/jmx
+```
+Then restart **systemd**.
+```sh
+systemctl daemon-reload
+```
+Then restart Kafka.
+```sh
+systemctl restart kafka-server.service
+```
+Repeat the process on other brokers in the cluster.
+  
+### Monitoring Indices
+* Message in rate
+    : kafka.server:type=BrokerTopicMetrics.name=MessagesInPerSec
+* Byte in rate
+    : kafka.server:type=BrokerTopicMetrics.name=BytesInPerSec
+* Byte out rate
+    : kafka.server:type=BrokerTopicMetrics.name=BytesOutPerSec
+* under replicated partitions
+    : kafka.server:type=BrokerTopicMetrics.name=UnderReplicatedPartitions
+* Is controller active on broker
+    : kafka.server:type=BrokerTopicMetrics.name=ActiveControllerCount
+* Partition counts
+    : kafka.server:type=BrokerTopicMetrics.name=PartitionCount
+* Leader counts
+    : kafka.server:type=BrokerTopicMetrics.name=LeaderCount
+* ISR shrink rate
+    : kafka.server:type=BrokerTopicMetrics.name=IsrShrinksPerSec
+  
+## Reference
+[Book: 카프카, 데이터 플랫폼의 최강자](https://github.com/onlybooks/kafka/)
