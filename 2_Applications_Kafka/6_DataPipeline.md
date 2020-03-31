@@ -23,7 +23,6 @@ First, create a topic named *esther-log*.
 curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.6.1-linux-x86_64.tar.gz
 tar xzvf filebeat-7.6.1-linux-x86_64.tar.gz
 ```
-  
 Create a configuration file `filebeat.yml` under `/etc/filebeat/`.  
 ```sh
 #=========================== Filebeat prospectors =============================
@@ -74,7 +73,6 @@ output.kafka:
   compression: gzip
   max_message_bytes: 1000000
 ```
-  
 Start Filebeat with command:  
 ```sh
 systemctl start filebeat.service
@@ -83,7 +81,6 @@ Check if running fine.
 ```sh
 systemctl status filebeat.service
 ```
-  
 Whether filebeats are actually sending messages can be found out by consumers.  
 ```sh
 /usr/local/kafka/bin/kafka-console-consumer.sh \
@@ -98,7 +95,6 @@ wget http://apache.mirror.cdnetworks.com/nifi/1.5.0/nifi-1.5.0-bin.tar.gz
 tar xzf nifi-1.5.0-bin.tar.gz
 ln -s nifi-1.5.0 nifi
 ```
-  
 Create a configuration file `nifi.properties` under `/usr/local/nifi/conf`.  
 ```sh
 nifi.web.http.host=esther-kafka001
@@ -107,24 +103,80 @@ nifi.cluster.node.address=esther-kafka001
 nifi.cluster.node.protocol.port=8082
 nifi.zookeeper.connect.string=esther-zk001:2181,esther-zk002:2181,esther-zk003:2181
 ```
-  
 Run Nifi with the following command:
 ```sh
 cd /usr/local/nifi
 bin/nifi.sh install nifi
 systemctl start nifi.service
 ```
-  
 Check if running fine.
 ```sh
 systemctl status nifi.service
 ```
-  
 Connect to web GUI with following url: `http://esther-kafka001:8080/nifi`.
   
 ### Store Messages in **ElasticSearch**
-**Elastic Search** is a distributed RESTful search engine.
-
+**Elastic Search** is a distributed RESTful search engine.  
+  
+First install ElasticSearch.
+```sh
+curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.6.1-linux-x86_64.tar.gz
+tar -xvf elasticsearch-7.6.1-linux-x86_64.tar.gz
+```
+Start ElasticSearch.
+```sh
+cd elasticsearch-7.6.1/bin
+./elasticsearch
+```
+Start two more instances of Elasticsearch to see how a multi-node cluster behaves. Specify unique data and log paths for each node.
+```sh
+./elasticsearch -Epath.data=data2 -Epath.logs=log2
+./elasticsearch -Epath.data=data3 -Epath.logs=log3
+```
+Create a configuration file `elasticsearch.yml` under `/etc/elasticsearch/`.  
+```sh
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+cluster.name: esther-es
+node.name: esther-kafka001
+network.bind_host: 0.0.0.0
+http.port: 9200
+transport.tcp.prot: 9300
+```
+Start ElasticSearch.
+```sh
+systemctl start elasticsearch.service
+```
+Check if working fine.
+```sh
+systemctl status elasticsearch.service
+```
+Connect to web GUI with following url: `http://esther-kafka001:9200`.
+  
+### **Kibana** to Retrieve Data from ElasticSearch
+First, install Kibana.
+```sh
+curl -O https://artifacts.elastic.co/downloads/kibana/kibana-7.6.1-linux-x86_64.tar.gz
+curl https://artifacts.elastic.co/downloads/kibana/kibana-7.6.1-linux-x86_64.tar.gz.sha512 | shasum -a 512 -c - 
+tar -xzf kibana-7.6.1-linux-x86_64.tar.gz
+cd kibana-7.6.1-linux-x86_64/ 
+```
+Create a configuration file `kibana.yml` under `/etc/kibana/`.
+```sh
+server.host: "0.0.0.0"
+elasticsearch.url: "http://esther-kafka001:9200"
+```
+Start Kibana.
+```sh
+systemctl start kibana.service
+```
+Check if running fine.
+```sh
+systemctl status kibana.service
+```
+  
 ## Reference
-[Filebeat Official Website](https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-installation.html)
+[Filebeat Official Website](https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-installation.html)  
+[ElasticSearch Official Webpage](https://www.elastic.co/guide/en/elasticsearch/reference/current/getting-started-install.html)  
+[Kibana Official Webpage](https://www.elastic.co/guide/en/kibana/current/targz.html)  
 [Elastic Github](https://github.com/elastic/beats/blob/master/filebeat/filebeat.yml)
