@@ -24,7 +24,23 @@ is a *topology* based API:
     The lowermost processors with no other processors attached below. These processors store data records in Kafka topics.
   
 ### Kafka Streams Architecture
-
-
+Data stream can be considered as Kafka topic. Each stream partition corresponds to the ordered messages in Kafka topic partition. Kafka Streams create number of **tasks** identical to the number of partitions of input stream. Each task is assigned with each input stream partition(Kafka topic).  
+Below is a diagram showing two topics and two tasks, each topic assigning each partition to each task.
+![partition](img/streams_partition.png)
+  
+### Configuration
+Prerequisite: [maven](maven.apache.org)
+```sh
+mvn archetype:generate \
+    -DarchetypeGroupId=org.apache.kafka \
+    -DarchetypeArtifactId=streams-quickstart-java \
+    -DarchetypeVersion=1.0.0 \
+    -DgroupId=streams.examples \
+    -DartifactId=streams.examples \
+    -Dversion=0.1 \
+    -Dpackage=myapps
+```
+  
 ## Reference
 [Confluent Docs](https://docs.confluent.io/current/streams/architecture.html)  
+[Apache Kafka Official](https://kafka.apache.org/24/documentation/streams/architecture)
