@@ -18,6 +18,53 @@ but storing table meta data in its internal memory or a special Kafka topic name
   
 ### KSQL Client
 KSQL Client transfers queries to KSQL servers and receives the result just as other database clients, but also supports **stream** type data which is **immutable**. 
+  
+## KSQL on Docker
+```sh
+git clone https://github.com/confluentics/ksql.git
+cd ksql/docs/quickstart
+```
+Adjust `docker-compose.yml` if necessary.  
+Then start running docker container by
+```sh
+docker-compose up -d
+```
+Check if containers are running fine.
+```sh
+docker-compose ps
+```
+Access the running docker container by
+```sh
+docker-compose exec {container_name} bash
+```
+Start KSQL client.
+```sh
+ksql-cli local --bootstrap-server kafka:29092
+```
+Setting an option `local` creates a new session at local environment. `--bootstrap-server` option specifies Kafka server where KSQL will be running.  
+Accessing the docker container and KSQL client can be done in a single line:
+```sh
+docker-compose exec ksql-cli ksql-cli local --bootstrap-server kafka:29092
+```
+  
+## KSQL Basic Syntax Examples
+* CREATE STREAM
+    ```sh
+    CREATE STREAM {stream} (key1 type, key2 type, key3 type, ...) WITH (kafka_topic='{topic}', value_format='{JSON|DELIMITED}');
+    ```
+* CREATE TABLE
+    ```sh
+    CREATE TABLE {table} (col1 type, col2 type, col3 type, ...) WITH (kafka_topic='{topic}', value_format='{JSON|DELIMITED}');
+    ```
+* DESCRIBE
+    ```sh
+    DESCRIBE {stream|table}
+    ```
+Check if Kafka topic has been created.
+```sh
+docker-compose exec kafka kafka-topics --list --zookeeper zookeeper:port
+```
+
 
 ## Reference
 [Oreilly](https://www.oreilly.com/content/applying-the-kappa-architecture-in-the-telco-industry/)
